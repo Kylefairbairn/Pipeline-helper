@@ -1,0 +1,46 @@
+// Parent pipeline
+pipeline {
+    agent none
+
+    stages {
+        stage('Netboot boards') {
+            steps {
+                script {
+                    def boards = [
+                        [name: 'board-01', ip: '10.0.0.218'],
+                        [name: 'board-02', ip: '10.0.0.219'],
+                        [name: 'board-03', ip: '10.0.0.220']
+                    ]
+
+                    def workers = [:]
+
+                    boards.each { board ->
+                        def target = board
+
+                        workers[target.name] = {
+                            build job: 'netboot-worker',
+                                parameters: [
+                                    string(
+                                        name: 'BOARD_ID',
+                                        value: target.name
+                                    ),
+                                    string(
+                                        name: 'BOARD_IP',
+                                        value: target.ip
+                                    ),
+                                    string(
+                                        name: 'IMAGE_VERSION',
+                                        value: 'my-build-123'
+                                    )
+                                ],
+                                wait: true,
+                                propagate: true
+                        }
+                    }
+
+                    parallel workers
+                }
+            }
+        }
+    }
+}
